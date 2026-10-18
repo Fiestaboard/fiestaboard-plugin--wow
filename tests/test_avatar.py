@@ -147,6 +147,7 @@ def test_palette_and_examples_render_on_real_pixel_canvas():
     from wow.avatar import avatar_canvas
     models = pytest.importorskip("src.canvas.models")  # Canvas is introduced in core next.
     from src.canvas.geometry import canvas_placement
+    from src.canvas.evaluate import resolve_content
     from src.canvas.raster import render_content
     from src.led.matrix import grid_layout
     im = Image.new("RGB", (84, 84))
@@ -160,6 +161,8 @@ def test_palette_and_examples_render_on_real_pixel_canvas():
         canvas = models.Canvas.model_validate(example["canvases"][0])
         place = canvas_placement(canvas, grid_layout(64, 64, "3x5"))
         assert (place.width, place.height) == size
-        rgba = render_content(content, place.width, place.height)
+        resolved, issues = resolve_content(content, {})
+        assert not issues
+        rgba = render_content(resolved, place.width, place.height)
         assert len(rgba) == size[0] * size[1] * 4
         assert any(rgba[3::4])

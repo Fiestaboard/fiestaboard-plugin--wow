@@ -1,0 +1,78 @@
+{
+  "name": "WoW - Character and Avatar",
+  "device_type": "panel",
+  "template": [
+    "{{wow.name}}",
+    "        {{wow.class}}",
+    "        ILVL",
+    "        {{wow.item_level_display}}",
+    "        M+",
+    "        {{wow.mythic_score_display}}",
+    "WEEK {{wow.weekly_key_display}}",
+    "{{wow.realm}}",
+    "{{wow.status}}",
+    "RIO {{wow.source_updated_date}}"
+  ],
+  "canvases": [
+    {
+      "id": "portrait",
+      "area": {
+        "row": 2,
+        "col": 1,
+        "rows": 5,
+        "cols": 8
+      },
+      "bleed": [
+        "left"
+      ],
+      "scale": 1,
+      "text": "hide",
+      "source": "{{wow.avatar_canvas}}"
+    }
+  ],
+  "type": "template",
+  "grid_rows": 10,
+  "grid_cols": 16,
+  "line_metadata": [
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    }
+  ]
+}

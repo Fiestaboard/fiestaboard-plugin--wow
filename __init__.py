@@ -8,8 +8,10 @@ from typing import Any
 from urllib.parse import quote
 
 import requests
+from PIL import Image
 
 from src.plugins.base import PluginBase, PluginResult
+from .avatar import avatar_canvas, download_avatar, trusted_avatar_url
 
 PROFILE_URL = "https://raider.io/api/v1/characters/profile"
 FIELDS = ",".join((
@@ -56,6 +58,9 @@ class WoWPlugin(PluginBase):
         super().__init__(manifest)
         self._last_good: dict | None = None
         self._retry_at = 0.0
+        self._avatar_bytes: bytes | None = None
+        self._avatar_key: tuple | None = None
+        self._avatar_fetched_at = 0.0
 
     @property
     def plugin_id(self) -> str:
@@ -82,6 +87,10 @@ class WoWPlugin(PluginBase):
                 errors.append(f"A {field} is required.")
             elif len(value) > 100 or any(ord(c) < 32 for c in value):
                 errors.append(f"Invalid {field}.")
+        for field in ("avatar_width", "avatar_height"):
+            value = config.get(field, 64)
+            if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 128:
+                errors.append(f"{field} must be a whole number from 1 to 128.")
         return errors
 
     def on_config_change(self, old_config: dict, new_config: dict) -> None:
@@ -89,6 +98,10 @@ class WoWPlugin(PluginBase):
         # fallback after a settings change. Preserve server-wide rate backoff.
         with self._fetch_lock:
             self._last_good = None
+            if any(old_config.get(k) != new_config.get(k) for k in ("region", "realm", "character")):
+                self._avatar_bytes = None
+                self._avatar_key = None
+                self._avatar_fetched_at = 0.0
 
     def fetch_data(self) -> PluginResult:
         with self._fetch_lock:
@@ -117,13 +130,40 @@ class WoWPlugin(PluginBase):
                 if response.status_code in (400, 404):
                     return self._failure("Character not found. Check Retail region, realm, and exact character spelling.")
                 response.raise_for_status()
-                data = self._profile(response.json(), config)
+                payload = response.json()
+                data = self._profile(payload, config)
             except requests.RequestException:
                 return self._failure("Raider.IO is unavailable or timed out.")
             except (ValueError, TypeError, KeyError):
                 return self._failure("Raider.IO returned an invalid character profile.")
+            data.update(self._avatar(payload, config))
             self._last_good = data
             return self._result(data)
+
+    def _avatar(self, payload: dict, config: dict) -> dict:
+        url = payload.get("thumbnail_url")
+        key = (url, payload.get("last_crawled_at"))
+        width, height = config.get("avatar_width", 64), config.get("avatar_height", 64)
+        status = "OK"
+        canvas = None
+        try:
+            if not trusted_avatar_url(url):
+                raise ValueError("Avatar URL unavailable")
+            if self._avatar_bytes is None or key != self._avatar_key or time.monotonic() - self._avatar_fetched_at >= 21600:
+                image = download_avatar(url)
+                canvas = avatar_canvas(image, width, height)
+                # Commit cache only after both download and decode succeed.
+                self._avatar_bytes, self._avatar_key = image, key
+                self._avatar_fetched_at = time.monotonic()
+            else:
+                canvas = avatar_canvas(self._avatar_bytes, width, height)
+        except (requests.RequestException, ValueError, OSError, Image.DecompressionBombError):
+            status = "UNAVAILABLE"
+            if self._avatar_bytes is not None:
+                canvas = avatar_canvas(self._avatar_bytes, width, height)
+                status = "STALE"
+        return {"avatar_canvas": canvas, "avatar_status": status,
+                "avatar_url": self._avatar_key[0] if canvas is not None else ""}
 
     def _profile(self, payload: Any, config: dict) -> dict:
         p = _mapping(payload)
@@ -203,7 +243,8 @@ class WoWPlugin(PluginBase):
     def _failure(self, message: str) -> PluginResult:
         if self._last_good is None:
             return PluginResult(available=False, error=message)
-        return self._result({**self._last_good, "stale": True, "status": "STALE"}, message)
+        return self._result({**self._last_good, "stale": True, "status": "STALE",
+                             "avatar_status": "STALE" if self._last_good.get("avatar_canvas") else "UNAVAILABLE"}, message)
 
     def get_formatted_display(self) -> list[str] | None:
         result = self.get_data()

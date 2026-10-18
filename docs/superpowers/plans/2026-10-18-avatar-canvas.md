@@ -12,7 +12,7 @@
 
 ## Global constraints
 
-- Keep existing stats and AI-art examples compatible; no core or FiestaUI change required.
+- Keep existing stats and AI-art examples compatible; no FiestaUI change required. Core next must ship Pillow.
 - Width and height each 1–128 pixels, default 64; at most 62 palette colors.
 - Only HTTPS Blizzard render hosts; no redirects, bounded image download and decoding.
 - Do not alter local Docker; test in CI while it is unavailable.
@@ -31,9 +31,11 @@ Files: create `avatar.py`, `tests/test_avatar.py`; modify `__init__.py`, `manife
 
 Interfaces: `avatar_canvas(image_bytes, width, height) -> dict`; `download_avatar(url) -> bytes`; plugin adds `avatar_canvas`, `avatar_status`, `avatar_url`.
 
-- [ ] Write behavior tests for conversion, fetch boundaries, caching, failure isolation, sizing and real rendering.
-- [ ] Run test-only branch in existing CI and observe missing feature failure.
+- [x] Write behavior tests for conversion, fetch boundaries, caching, failure isolation, sizing and real rendering.
+- [x] Run test-only branch in existing CI and observe missing feature failure.
 - [ ] Implement conversion, validated download, cache integration, settings and documentation.
 - [ ] Run full suite against core main and next with existing 80% coverage gate.
 - [ ] Review, merge and release plugin 1.1.0.
 - [ ] Back up Pi, update only WoW plugin, switch demo portrait source, verify live output and a full-display example.
+
+Runtime finding: core does not install plugin requirements. Add Pillow to core next before updating the plugin; require >=10.0.0-beta.59. Test-only CI 39176116091: 25 expected new-feature failures, 19 existing tests passed on next.
