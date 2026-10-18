@@ -3,13 +3,13 @@
   "device_type": "panel",
   "template": [
     "{{wow.name}}",
-    "",
+    "        {{wow.class}}",
     "        ILVL",
     "        {{wow.item_level_display}}",
     "        M+",
     "        {{wow.mythic_score_display}}",
-    "",
-    "{{wow.spec}}",
+    "WEEK {{wow.weekly_key_display}}",
+    "{{wow.realm}}",
     "{{wow.status}}",
     "RIO {{wow.source_updated_date}}"
   ],

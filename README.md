@@ -4,6 +4,8 @@ Display Retail character stats from Raider.IO alongside your FiestaBoard content
 
 ![World of Warcraft Display](./docs/board-display.png)
 
+Captured from FiestaBoard’s rendered 64×64 output: a generated Druid portrait beside real Raider.IO stats for the Anorak–Bronzebeard demo. This is a rendering of the sent frame, not a photograph of the device.
+
 **→ [Setup Guide](./docs/SETUP.md)**
 
 ## Overview
