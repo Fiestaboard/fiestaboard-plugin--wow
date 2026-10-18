@@ -1,0 +1,78 @@
+{
+  "name": "WoW - Full Display Avatar",
+  "device_type": "panel",
+  "template": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "canvases": [
+    {
+      "id": "portrait",
+      "area": {
+        "row": 1,
+        "col": 1,
+        "rows": 10,
+        "cols": 16
+      },
+      "bleed": [
+        "all"
+      ],
+      "scale": 1,
+      "text": "hide",
+      "source": "{{wow.avatar_canvas}}"
+    }
+  ],
+  "type": "template",
+  "grid_rows": 10,
+  "grid_cols": 16,
+  "line_metadata": [
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    },
+    {
+      "alignment": "left",
+      "wrap": false
+    }
+  ]
+}

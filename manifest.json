@@ -1,8 +1,8 @@
 {
   "id": "wow",
   "name": "World of Warcraft",
-  "version": "1.0.0",
-  "description": "Track a Retail character\u2019s item level, Mythic+ score, weekly keys, and raid progress with Raider.IO.",
+  "version": "1.1.0",
+  "description": "Track a Retail character’s stats and real pixel avatar with Raider.IO.",
   "author": "FiestaBoard Team",
   "icon": "swords",
   "category": "data",
@@ -45,6 +45,22 @@
         "default": 900,
         "minimum": 300,
         "maximum": 86400
+      },
+      "avatar_width": {
+        "type": "integer",
+        "title": "Avatar pixel width",
+        "description": "Source image resolution (1–128). The page canvas area controls where and how large it appears. Use 64 × 64 for a full Pixoo display. Rectangles crop the portrait without stretching.",
+        "default": 64,
+        "minimum": 1,
+        "maximum": 128
+      },
+      "avatar_height": {
+        "type": "integer",
+        "title": "Avatar pixel height",
+        "description": "Source image resolution (1–128). The page canvas area controls where and how large it appears. Use 64 × 64 for a full Pixoo display. Rectangles crop the portrait without stretching.",
+        "default": 64,
+        "minimum": 1,
+        "maximum": 128
       }
     },
     "required": [
@@ -63,6 +79,9 @@
       },
       "source": {
         "label": "Source"
+      },
+      "avatar": {
+        "label": "Character avatar"
       }
     },
     "simple": {
@@ -205,6 +224,22 @@
         "description": "OK, OLD DATA (source older than seven days), or STALE (refresh failed)",
         "type": "string",
         "group": "source"
+      },
+      "avatar_canvas": {
+        "description": "Real Blizzard character portrait as pixel canvas content; null until an image is available. Set a page canvas source to {{wow.avatar_canvas}}.",
+        "type": "object",
+        "format": "canvas",
+        "group": "avatar"
+      },
+      "avatar_status": {
+        "description": "OK, STALE (last good portrait), or UNAVAILABLE",
+        "type": "string",
+        "group": "avatar"
+      },
+      "avatar_url": {
+        "description": "Blizzard image URL for the displayed portrait, or empty when unavailable",
+        "type": "string",
+        "group": "avatar"
       }
     },
     "arrays": {

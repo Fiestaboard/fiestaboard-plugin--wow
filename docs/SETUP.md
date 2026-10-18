@@ -4,7 +4,7 @@ Show a Retail character's stats using Raider.IO.
 
 ## Overview
 
-Requires FiestaBoard 9.0.0 or newer, internet access, and a character indexed on [Raider.IO](https://raider.io). No credentials are needed. Classic is not supported by this plugin.
+Text stats require FiestaBoard 9.0.0 or newer, internet access, and a character indexed on [Raider.IO](https://raider.io). No credentials are needed. Classic is not supported by this plugin.
 
 ## Quick Setup
 
@@ -14,6 +14,12 @@ Requires FiestaBoard 9.0.0 or newer, internet access, and a character indexed on
 4. Preview and assign the page to a board. Include `{{wow.source_updated_date}}` so viewers can judge freshness.
 
 For the Divoom/AI-art layout, see the [example page](../examples/pixoo-character-and-art.json) and [README](../README.md#example-templates). The art source requires Generative AI Art to be installed, enabled and configured. Missing art does not prevent stats from loading. The JSON is page content for the page API/editor, not a separate plugin configuration or a guaranteed share-import file.
+
+## Character portrait canvas
+
+Set a page canvas’s Source to `{{wow.avatar_canvas}}`. Adjust its area in the canvas editor; use **Avatar pixel width/height** in the WoW integration settings for source resolution (default 64×64, maximum 128×128). A rectangular source crops the image without stretching. For a whole 64×64 Pixoo, cover all 10×16 text cells with bleed on all sides and scale 1.
+
+See the [small portrait example](../examples/pixoo-character-and-avatar.json), [full-display example](../examples/pixoo-avatar-full-display.json), and [sizing/caching details](../README.md#real-character-avatar). No Generative AI Art instance is needed for the real portrait. Avatar decoding requires FiestaBoard 10.0.0-beta.59 or newer on `next`, which ships Pillow. Older runtimes keep stats working with `avatar_status=UNAVAILABLE`.
 
 ## Template Variables
 
@@ -47,6 +53,9 @@ For the Divoom/AI-art layout, see the [example page](../examples/pixoo-character
 | `fetched_at` | Timestamp of our last successful fetch, not the source update time |
 | `stale` | True when showing a saved snapshot after a failed refresh |
 | `status` | OK, OLD DATA (source older than seven days), or STALE (refresh failed) |
+| `avatar_canvas` | Actual Blizzard portrait as pixel canvas content; null when unavailable |
+| `avatar_status` | OK, STALE (cached portrait), or UNAVAILABLE |
+| `avatar_url` | Source Blizzard image URL for the displayed portrait |
 
 `weekly_runs` and `raids` expose the run and raid arrays; see the README for fields.
 
@@ -58,6 +67,8 @@ For the Divoom/AI-art layout, see the [example page](../examples/pixoo-character
 | `realm` | Required | Realm name or slug from the profile URL |
 | `character` | Required | Exact character name, including accents |
 | `refresh_seconds` | `900` | Poll interval, 300–86400 seconds |
+| `avatar_width` | `64` | Source pixel width, 1–128 |
+| `avatar_height` | `64` | Source pixel height, 1–128 |
 
 No environment variables, API keys, or account permissions are used.
 
@@ -68,7 +79,8 @@ No environment variables, API keys, or account permissions are used.
 - **STALE:** A refresh failed; the last successful snapshot remains visible. It is held in memory and is cleared when configuration changes or the process restarts.
 - **-- / NO DATA:** A requested field or activity record was not supplied. This is distinct from a real zero score.
 - **Rate limit:** The plugin waits for Retry-After and tries again on a subsequent refresh. Leave the default 15-minute poll interval unless you have a reason to change it.
-- **Art is blank:** Check Generative AI Art separately and save a known-good canvas fallback. Text and art refresh independently.
+- **Avatar is blank:** Check `avatar_status` and the character’s Raider.IO portrait. The avatar requires a pixel canvas on a compatible build, not a text template cell. Save known-good canvas content as fallback. A missing portrait never blocks stats.
+- **AI art is blank:** Check Generative AI Art separately and save a known-good canvas fallback. Text and art refresh independently.
 - **Healing stats:** `healer_score` is a Mythic+ role score, not healing-per-second. This plugin does not fetch Warcraft Logs or invent combat performance.
 
 Data supplied by [Raider.IO](https://raider.io). Include that attribution link in public dashboard documentation.
