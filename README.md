@@ -1,6 +1,6 @@
 # World of Warcraft Plugin
 
-Display Retail character stats from Raider.IO alongside your FiestaBoard content.
+Display Retail character stats from Raider.IO and the character’s actual Blizzard portrait as a pixel canvas. Version 1.1 requires FiestaBoard 10.0.0-beta.59 or newer (`next`), which includes the image decoder.
 
 ![World of Warcraft Display](./docs/board-display.png)
 
@@ -46,6 +46,9 @@ Prefix all variables with `wow.`. Numeric values are null when unknown; the corr
 | `fetched_at` | Timestamp of our last successful fetch, not the source update time |
 | `stale` | True when showing a saved snapshot after a failed refresh |
 | `status` | OK, OLD DATA (source older than seven days), or STALE (refresh failed) |
+| `avatar_canvas` | Actual Blizzard portrait as pixel canvas content; null when unavailable |
+| `avatar_status` | OK, STALE (cached portrait), or UNAVAILABLE |
+| `avatar_url` | Source Blizzard image URL for the displayed portrait |
 
 `weekly_runs` contains dungeon, short_name, level, timed, and score. `raids` contains slug, name, summary, total_bosses, normal_bosses_killed, heroic_bosses_killed, and mythic_bosses_killed. Index arrays as `{{wow.raids.0.summary}}`.
 
@@ -64,6 +67,18 @@ RIO {{wow.source_updated_date}}
 
 Numbers in the registry previews are illustrative. The running plugin always reads API data; it does not generate stats with AI. A character's active spec can differ from the role used for previous runs.
 
+## Real character avatar
+
+Add a canvas to your page and set its **Source** to `{{wow.avatar_canvas}}`. The plugin downloads the Blizzard thumbnail supplied by Raider.IO and converts that actual image into pixels. No AI generation, API key, or additional art plugin is required.
+
+- **Beside stats:** use the [character and avatar example](./examples/pixoo-character-and-avatar.json). Its portrait region is 31×29 physical pixels on a 64×64 Pixoo using the 3×5 font. The default square portrait fits inside it. For a crop that fills the entire rectangle, set avatar width to 31 and height to 29.
+- **Whole display:** use the [full-display example](./examples/pixoo-avatar-full-display.json), with width and height set to 64. Its canvas covers all 10 rows and 16 columns, with bleed on all sides to reach all 64×64 pixels.
+- **Resize:** the page canvas’s area controls placement and on-screen size. Plugin **Avatar pixel width/height** controls source detail, independently, from 1 to 128 each. Rectangular sources use a centered crop without stretching. Keep 64×64 when sharing one square portrait across small and large regions; each region fits it automatically. Canvas scale above 1 makes bigger pixel blocks.
+
+The converter reduces the portrait to at most 62 colors and avoids dithering for clear LED pixels. Fine facial detail is limited by both the source thumbnail and your chosen canvas area; there is no AI reconstruction.
+
+The original image is cached in memory. A changed URL or Raider.IO source timestamp refreshes it, and an unchanged source is rechecked after six hours. A failed image refresh keeps the last good portrait with `avatar_status=STALE`; stats continue independently. Changing characters clears the portrait cache. After restart, a failed first download returns a null canvas: save known-good canvas content as the page’s fallback if you want an image during that interval. The existing AI-art example remains available for themed generated artwork.
+
 ## Configuration
 
 | Setting | Default | Description |
@@ -72,6 +87,8 @@ Numbers in the registry previews are illustrative. The running plugin always rea
 | `realm` | Required | Realm name or slug from the profile URL |
 | `character` | Required | Exact character name, including accents |
 | `refresh_seconds` | `900` | Poll interval, 300–86400 seconds |
+| `avatar_width` | `64` | Source pixel width, 1–128 |
+| `avatar_height` | `64` | Source pixel height, 1–128 |
 
 ## Features
 
