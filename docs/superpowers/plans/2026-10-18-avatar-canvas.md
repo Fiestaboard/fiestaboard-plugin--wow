@@ -39,3 +39,5 @@ Interfaces: `avatar_canvas(image_bytes, width, height) -> dict`; `download_avata
 - [ ] Back up Pi, update only WoW plugin, switch demo portrait source, verify live output and a full-display example.
 
 Runtime finding: core does not install plugin requirements. Add Pillow to core next before updating the plugin; require >=10.0.0-beta.59. Test-only CI 39176116091: 25 expected new-feature failures, 19 existing tests passed on next.
+
+Review correction: beta constraints fail open in old cores. Keep >=9.0.0 for stats and make Pillow optional; do not list it as a mandatory plugin dependency. Core next supplies it for avatars. The absent-Pillow subprocess regression failed on CI39176378957 before the fix.

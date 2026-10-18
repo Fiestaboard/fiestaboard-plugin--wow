@@ -1,6 +1,6 @@
 # World of Warcraft Plugin
 
-Display Retail character stats from Raider.IO and the character’s actual Blizzard portrait as a pixel canvas. Version 1.1 requires FiestaBoard 10.0.0-beta.59 or newer (`next`), which includes the image decoder.
+Display Retail character stats from Raider.IO and the character’s actual Blizzard portrait as a pixel canvas. Text stats require FiestaBoard 9.0.0 or newer. Real avatar canvases require a pixel-capable build with Pillow (10.0.0-beta.59 or newer on `next`).
 
 ![World of Warcraft Display](./docs/board-display.png)
 

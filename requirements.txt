@@ -1,3 +1,4 @@
 requests>=2.31.0,<3
 
-Pillow>=10.4,<13
+# Avatar decoding uses Pillow when supplied by the FiestaBoard runtime.
+# Keep it optional here so older cores retain working text stats.

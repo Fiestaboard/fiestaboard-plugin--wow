@@ -8,7 +8,7 @@
   "category": "data",
   "repository": "https://github.com/Fiestaboard/fiestaboard-plugin--wow",
   "documentation": "docs/SETUP.md",
-  "fiestaboard_version": ">=10.0.0-beta.59",
+  "fiestaboard_version": ">=9.0.0",
   "min_refresh_seconds": 300,
   "settings_schema": {
     "type": "object",

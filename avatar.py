@@ -3,12 +3,21 @@ from io import BytesIO
 from urllib.parse import urlsplit
 
 import requests
-from PIL import Image, ImageOps
+try:
+    from PIL import Image, ImageOps
+except ImportError:  # Older cores still support the character's text stats.
+    Image = ImageOps = None
+
+DECODE_ERRORS = (OSError, ValueError) + ((Image.DecompressionBombError,) if Image else ())
 
 MAX_DOWNLOAD_BYTES = 2 * 1024 * 1024
 MAX_IMAGE_EDGE = 2048
 PALETTE_KEYS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 RENDER_HOSTS = {"render.worldofwarcraft.com", *(f"render-{region}.worldofwarcraft.com" for region in ("eu", "us", "kr", "tw"))}
+
+
+def image_decoder_available() -> bool:
+    return Image is not None
 
 
 def trusted_avatar_url(value) -> bool:
@@ -46,6 +55,8 @@ def download_avatar(url: str) -> bytes:
 
 def avatar_canvas(image_bytes: bytes, width: int = 64, height: int = 64) -> dict:
     """Fill the requested pixel rectangle with a centered crop, never stretch."""
+    if not image_decoder_available():
+        raise ValueError("This FiestaBoard runtime does not include image decoding")
     if any(isinstance(v, bool) or not isinstance(v, int) or not 1 <= v <= 128 for v in (width, height)):
         raise ValueError("Avatar dimensions must be integers from 1 to 128")
     if len(image_bytes) > MAX_DOWNLOAD_BYTES:
@@ -59,7 +70,7 @@ def avatar_canvas(image_bytes: bytes, width: int = 64, height: int = 64) -> dict
         image = ImageOps.fit(image, (width, height), method=Image.Resampling.LANCZOS)
         quantized = image.quantize(colors=len(PALETTE_KEYS), dither=Image.Dither.NONE)
     palette = quantized.getpalette()
-    indices = list(quantized.getdata())
+    indices = quantized.tobytes()
     colors = {PALETTE_KEYS[i]: "#%02x%02x%02x" % tuple(palette[3*i:3*i+3]) for i in sorted(set(indices))}
     pixels = ["".join(PALETTE_KEYS[i] for i in indices[y*width:(y+1)*width]) for y in range(height)]
     return {"size": [width, height], "palette": colors, "pixels": pixels}

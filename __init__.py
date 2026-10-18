@@ -8,10 +8,9 @@ from typing import Any
 from urllib.parse import quote
 
 import requests
-from PIL import Image
 
 from src.plugins.base import PluginBase, PluginResult
-from .avatar import avatar_canvas, download_avatar, trusted_avatar_url
+from .avatar import DECODE_ERRORS, avatar_canvas, download_avatar, image_decoder_available, trusted_avatar_url
 
 PROFILE_URL = "https://raider.io/api/v1/characters/profile"
 FIELDS = ",".join((
@@ -147,6 +146,8 @@ class WoWPlugin(PluginBase):
         status = "OK"
         canvas = None
         try:
+            if not image_decoder_available():
+                raise ValueError("Avatar decoder unavailable")
             if not trusted_avatar_url(url):
                 raise ValueError("Avatar URL unavailable")
             if self._avatar_bytes is None or key != self._avatar_key or time.monotonic() - self._avatar_fetched_at >= 21600:
@@ -157,7 +158,7 @@ class WoWPlugin(PluginBase):
                 self._avatar_fetched_at = time.monotonic()
             else:
                 canvas = avatar_canvas(self._avatar_bytes, width, height)
-        except (requests.RequestException, ValueError, OSError, Image.DecompressionBombError):
+        except (requests.RequestException, *DECODE_ERRORS):
             status = "UNAVAILABLE"
             if self._avatar_bytes is not None:
                 canvas = avatar_canvas(self._avatar_bytes, width, height)

@@ -4,7 +4,7 @@ Show a Retail character's stats using Raider.IO.
 
 ## Overview
 
-Version 1.1 requires FiestaBoard 10.0.0-beta.59 or newer (the `next` channel), internet access, and a character indexed on [Raider.IO](https://raider.io). No credentials are needed. Classic is not supported by this plugin.
+Text stats require FiestaBoard 9.0.0 or newer, internet access, and a character indexed on [Raider.IO](https://raider.io). No credentials are needed. Classic is not supported by this plugin.
 
 ## Quick Setup
 
@@ -19,7 +19,7 @@ For the Divoom/AI-art layout, see the [example page](../examples/pixoo-character
 
 Set a page canvas’s Source to `{{wow.avatar_canvas}}`. Adjust its area in the canvas editor; use **Avatar pixel width/height** in the WoW integration settings for source resolution (default 64×64, maximum 128×128). A rectangular source crops the image without stretching. For a whole 64×64 Pixoo, cover all 10×16 text cells with bleed on all sides and scale 1.
 
-See the [small portrait example](../examples/pixoo-character-and-avatar.json), [full-display example](../examples/pixoo-avatar-full-display.json), and [sizing/caching details](../README.md#real-character-avatar). No Generative AI Art instance is needed for the real portrait.
+See the [small portrait example](../examples/pixoo-character-and-avatar.json), [full-display example](../examples/pixoo-avatar-full-display.json), and [sizing/caching details](../README.md#real-character-avatar). No Generative AI Art instance is needed for the real portrait. Avatar decoding requires FiestaBoard 10.0.0-beta.59 or newer on `next`, which ships Pillow. Older runtimes keep stats working with `avatar_status=UNAVAILABLE`.
 
 ## Template Variables
 
