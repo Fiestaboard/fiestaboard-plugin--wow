@@ -166,3 +166,31 @@ def test_palette_and_examples_render_on_real_pixel_canvas():
         rgba = render_content(resolved, place.width, place.height)
         assert len(rgba) == size[0] * size[1] * 4
         assert any(rgba[3::4])
+
+
+def test_older_runtime_without_pillow_still_loads_and_serves_stats():
+    import subprocess
+    import sys
+    script = '''
+import builtins
+real_import = builtins.__import__
+def without_pillow(name, *args, **kwargs):
+    if name == "PIL" or name.startswith("PIL."):
+        raise ImportError("Pillow is not shipped on this old core")
+    return real_import(name, *args, **kwargs)
+builtins.__import__ = without_pillow
+from wow import WoWPlugin
+from unittest.mock import Mock, patch
+plugin = WoWPlugin({"id": "wow", "name": "World of Warcraft", "version": "1.1.0"})
+plugin.config = {"region": "eu", "realm": "example", "character": "Example"}
+profile = Mock(status_code=200)
+profile.json.return_value = {"name":"Example", "realm":"Example", "class":"Druid", "thumbnail_url":"https://render.worldofwarcraft.com/a.jpg"}
+with patch("requests.get", side_effect=[profile]) as get:
+    result = plugin.fetch_data()
+assert result.available and result.data["name"] == "Example"
+assert result.data["avatar_canvas"] is None
+assert result.data["avatar_status"] == "UNAVAILABLE"
+assert get.call_count == 1
+'''
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
