@@ -1,0 +1,277 @@
+{
+  "id": "wow",
+  "name": "World of Warcraft",
+  "version": "1.0.0",
+  "description": "Track a Retail character\u2019s item level, Mythic+ score, weekly keys, and raid progress with Raider.IO.",
+  "author": "FiestaBoard Team",
+  "icon": "swords",
+  "category": "data",
+  "repository": "https://github.com/Fiestaboard/fiestaboard-plugin--world-of-warcraft",
+  "documentation": "docs/SETUP.md",
+  "fiestaboard_version": ">=9.0.0",
+  "min_refresh_seconds": 300,
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "region": {
+        "type": "string",
+        "title": "Region",
+        "enum": [
+          "eu",
+          "us",
+          "kr",
+          "tw"
+        ],
+        "default": "eu"
+      },
+      "realm": {
+        "type": "string",
+        "title": "Realm",
+        "description": "Retail realm name or slug, such as silvermoon. Copy it from your Raider.IO profile URL.",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "character": {
+        "type": "string",
+        "title": "Character",
+        "description": "Exact character spelling, including accents.",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "refresh_seconds": {
+        "type": "integer",
+        "title": "Refresh interval (seconds)",
+        "description": "Raider.IO updates periodically; this is not live game telemetry.",
+        "default": 900,
+        "minimum": 300,
+        "maximum": 86400
+      }
+    },
+    "required": [
+      "region",
+      "realm",
+      "character"
+    ]
+  },
+  "variables": {
+    "groups": {
+      "character": {
+        "label": "Character"
+      },
+      "progress": {
+        "label": "Progress"
+      },
+      "source": {
+        "label": "Source"
+      }
+    },
+    "simple": {
+      "name": {
+        "description": "Character name",
+        "type": "string",
+        "group": "character"
+      },
+      "realm": {
+        "description": "Realm",
+        "type": "string",
+        "group": "character"
+      },
+      "region": {
+        "description": "Region",
+        "type": "string",
+        "group": "character"
+      },
+      "class": {
+        "description": "Class",
+        "type": "string",
+        "group": "character"
+      },
+      "spec": {
+        "description": "Active specialization",
+        "type": "string",
+        "group": "character"
+      },
+      "role": {
+        "description": "Active role",
+        "type": "string",
+        "group": "character"
+      },
+      "race": {
+        "description": "Race",
+        "type": "string",
+        "group": "character"
+      },
+      "faction": {
+        "description": "Faction",
+        "type": "string",
+        "group": "character"
+      },
+      "guild": {
+        "description": "Guild",
+        "type": "string",
+        "group": "character"
+      },
+      "achievement_points": {
+        "description": "Achievement points",
+        "type": "number",
+        "group": "character"
+      },
+      "item_level": {
+        "description": "Equipped item level; null when unavailable",
+        "type": "number",
+        "group": "progress"
+      },
+      "item_level_display": {
+        "description": "Rounded item level or --",
+        "type": "string",
+        "group": "progress"
+      },
+      "season": {
+        "description": "Season returned by Raider.IO",
+        "type": "string",
+        "group": "progress"
+      },
+      "mythic_score": {
+        "description": "Overall current-season Mythic+ score; null when unavailable",
+        "type": "number",
+        "group": "progress"
+      },
+      "mythic_score_display": {
+        "description": "Rounded score or --",
+        "type": "string",
+        "group": "progress"
+      },
+      "healer_score": {
+        "description": "Current-season healer score; null when unavailable",
+        "type": "number",
+        "group": "progress"
+      },
+      "weekly_highest_key": {
+        "description": "Highest completed key this week, including untimed runs",
+        "type": "number",
+        "group": "progress"
+      },
+      "weekly_highest_timed_key": {
+        "description": "Highest timed key this week",
+        "type": "number",
+        "group": "progress"
+      },
+      "weekly_key_display": {
+        "description": "Highest completed key formatted as +N, or --",
+        "type": "string",
+        "group": "progress"
+      },
+      "raid_progress": {
+        "description": "Current-tier raid summaries, separated by |",
+        "type": "string",
+        "group": "progress"
+      },
+      "source": {
+        "description": "Data provider name",
+        "type": "string",
+        "group": "source"
+      },
+      "profile_url": {
+        "description": "Raider.IO character profile and attribution link",
+        "type": "string",
+        "group": "source"
+      },
+      "source_updated_at": {
+        "description": "Timestamp when Raider.IO last crawled the character",
+        "type": "string",
+        "group": "source"
+      },
+      "source_updated_date": {
+        "description": "Source date, YYYY-MM-DD, or UNKNOWN",
+        "type": "string",
+        "group": "source"
+      },
+      "source_age_days": {
+        "description": "Age of the source snapshot in days; null if unknown",
+        "type": "number",
+        "group": "source"
+      },
+      "fetched_at": {
+        "description": "Timestamp of our last successful fetch, not the source update time",
+        "type": "string",
+        "group": "source"
+      },
+      "stale": {
+        "description": "True when showing a saved snapshot after a failed refresh",
+        "type": "boolean",
+        "group": "source"
+      },
+      "status": {
+        "description": "OK, OLD DATA (source older than seven days), or STALE (refresh failed)",
+        "type": "string",
+        "group": "source"
+      }
+    },
+    "arrays": {
+      "weekly_runs": {
+        "label_field": "dungeon",
+        "item_fields": [
+          "dungeon",
+          "short_name",
+          "level",
+          "timed",
+          "score"
+        ]
+      },
+      "raids": {
+        "label_field": "name",
+        "item_fields": [
+          "slug",
+          "name",
+          "summary",
+          "total_bosses",
+          "normal_bosses_killed",
+          "heroic_bosses_killed",
+          "mythic_bosses_killed"
+        ]
+      }
+    }
+  },
+  "demo": {
+    "name": "WoW Retail Character",
+    "device_type": "flagship",
+    "template": [
+      "{{wow.name}}",
+      "{{wow.spec}} {{wow.class}}",
+      "ILVL {{wow.item_level_display}}  M+ {{wow.mythic_score_display}}",
+      "WEEK {{wow.weekly_key_display}}",
+      "{{wow.raid_progress}}",
+      "RIO {{wow.source_updated_date}}"
+    ]
+  },
+  "screenshots": [
+    {
+      "src": "docs/board-display.png",
+      "alt": "World of Warcraft character dashboard with an AI art canvas beside API-sourced stats",
+      "primary": true
+    }
+  ],
+  "teaser": "WOW M+ 2457",
+  "previews": [
+    {
+      "device_type": "flagship",
+      "rows": [
+        "EXAMPLE",
+        "RESTORATION DRUID",
+        "ILVL 251  M+ 2457",
+        "WEEK +10",
+        "3/8 H",
+        "RAIDER.IO"
+      ]
+    },
+    {
+      "device_type": "note",
+      "rows": [
+        "EXAMPLE",
+        "ILVL 251",
+        "M+ 2457"
+      ]
+    }
+  ],
+  "env_vars": []
+}

@@ -1,0 +1,36 @@
+name: CI
+on:
+  push:
+    branches: [main, next, 'feat/**']
+  pull_request:
+    branches: [main, next]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        core-ref: [main, next]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: plugin
+      - uses: actions/checkout@v4
+        with:
+          repository: Fiestaboard/FiestaBoard
+          ref: ${{ matrix.core-ref }}
+          path: core
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r core/requirements.txt -r plugin/requirements.txt pytest pytest-cov
+      - name: Make plugin importable
+        run: ln -s plugin wow
+      - name: Tests and manifest validation
+        working-directory: plugin
+        env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/core
+          BOARD_READ_WRITE_KEY: test_key
+        run: pytest --cov=wow --cov-report=term-missing --cov-fail-under=80
