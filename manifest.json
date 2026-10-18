@@ -6,7 +6,7 @@
   "author": "FiestaBoard Team",
   "icon": "swords",
   "category": "data",
-  "repository": "https://github.com/Fiestaboard/fiestaboard-plugin--world-of-warcraft",
+  "repository": "https://github.com/Fiestaboard/fiestaboard-plugin--wow",
   "documentation": "docs/SETUP.md",
   "fiestaboard_version": ">=9.0.0",
   "min_refresh_seconds": 300,
