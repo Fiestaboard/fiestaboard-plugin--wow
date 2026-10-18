@@ -8,7 +8,7 @@ Requires FiestaBoard 9.0.0 or newer, internet access, and a character indexed on
 
 ## Quick Setup
 
-1. Install **World of Warcraft** from Integrations, or install `https://github.com/Fiestaboard/fiestaboard-plugin--world-of-warcraft` with plugin ID `wow`.
+1. Install **World of Warcraft** from Integrations, or install `https://github.com/Fiestaboard/fiestaboard-plugin--wow` with plugin ID `wow`.
 2. Open the character's Raider.IO profile. A URL like `/characters/eu/realm-name/Character` gives the region, realm and exact name. Configure those fields, then enable the plugin.
 3. Create the plugin's demo page or insert `{{wow.name}}`, `{{wow.item_level_display}}` and `{{wow.mythic_score_display}}` in your own page.
 4. Preview and assign the page to a board. Include `{{wow.source_updated_date}}` so viewers can judge freshness.
