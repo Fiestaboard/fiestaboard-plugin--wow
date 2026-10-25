@@ -25,7 +25,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: pip install -r core/requirements.txt -r plugin/requirements.txt 'Pillow>=10.4,<13' pytest pytest-cov
+        run: pip install -r core/requirements.txt -r plugin/requirements.txt 'Pillow>=13,<14' pytest pytest-cov
       - name: Make plugin importable
         run: ln -s plugin wow
       - name: Tests and manifest validation
