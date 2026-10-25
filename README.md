@@ -1,6 +1,6 @@
 # World of Warcraft Plugin
 
-Display Retail character stats from Raider.IO and the character’s actual Blizzard portrait as a pixel canvas. Text stats require FiestaBoard 9.0.0 or newer. Real avatar canvases require a pixel-capable build with Pillow (10.0.0-beta.59 or newer on `next`).
+Display Retail character stats from Raider.IO, or fresher stats from Blizzard’s official API, and the character’s actual Blizzard portrait as a pixel canvas. Text stats require FiestaBoard 9.0.0 or newer. Real avatar canvases require a pixel-capable build with Pillow (10.0.0-beta.59 or newer on `next`).
 
 ![World of Warcraft Display](./docs/board-display.png)
 
@@ -10,7 +10,32 @@ Captured from FiestaBoard’s rendered 64×64 output: a generated Druid portrait
 
 ## Overview
 
-Track one configurable Retail character with the public [Raider.IO API](https://raider.io/api). No API key or Battle.net login is required. Character data updates periodically; this plugin exposes both the source update time and the time FiestaBoard fetched it.
+Track one configurable Retail character with the public [Raider.IO API](https://raider.io/api) — no API key required — or, with a free Battle.net API client, [Blizzard’s Profile API](#fresher-data-with-blizzards-api-optional). Character data updates periodically; this plugin exposes both the source update time and the time FiestaBoard fetched it.
+
+## Fresher data with Blizzard’s API (optional)
+
+Raider.IO only changes when it re-crawls a character, which can take hours or days. Blizzard’s official Profile API updates **when the character logs out**, so the board reflects each play session.
+
+**This is opt-in, and each board owner sets it up for themselves.** Without credentials the plugin uses Raider.IO and needs no account. To use Blizzard, create your own free Battle.net API client (about two minutes, nothing to apply for) and paste its client ID and secret into your board’s plugin settings. FiestaBoard does not ship a shared client: the plugin is open source, so a bundled secret would be public and Blizzard would revoke it. Your secret stays on your board. No Battle.net sign-in, browser redirect or FiestaBoard OAuth relay is involved; the plugin uses OAuth’s client-credentials grant.
+
+**→ [Step-by-step: create a client, fill in Blizzard’s form, keep the secret private](./docs/SETUP.md#optional-fresher-data-from-blizzard)**
+
+In short:
+
+1. At [develop.battle.net](https://develop.battle.net/access/clients) → **API Access**, create a client. Tick “I do not have a service URL”; the redirect URL is unused (`https://fiestaboard.app/auth/oauth/redirect` is fine).
+2. Paste the **client ID** and **client secret** into the plugin settings. Leave **Data source** on `auto`.
+3. Use the realm **slug** from your Armory URL (`worldofwarcraft.blizzard.com/…/character/eu/argent-dawn/name`). Accented Latin names are converted automatically; Russian, Korean and Taiwanese realms must be entered as the slug.
+
+What changes with Blizzard as the source:
+
+- `source` is `Blizzard`, `source_short` is `BNET`, and `profile_url` links to the Armory.
+- `source_updated_at` is the character’s last logout. `OLD DATA` means no logout in seven days.
+- `mythic_score` is Blizzard’s Mythic+ rating, which can differ slightly from the Raider.IO score. `healer_score` is not provided (null).
+- `role` comes from the active specialization. `weekly_runs` are this week’s best runs; `short_name` is empty.
+- `raids` lists every raid in Blizzard’s *Current Season* group (falling back to the newest expansion), summarized at the highest difficulty with a kill.
+- The avatar uses Blizzard’s character-media portrait with the same trusted-host checks and cache.
+
+Each refresh makes four API calls (five if a rejected token is renewed) plus a token request about once a day, far below Blizzard’s limits. Both credentials are stored as masked settings in the board’s own configuration and never appear in variables, errors or logs; the secret is sent only to Blizzard’s token endpoint. If it is ever exposed, reset it at develop.battle.net. Filling in only one of the two is rejected so a paste error cannot silently fall back to Raider.IO. Set **Data source** to `raiderio` to keep the credentials but use Raider.IO, or `blizzard` to require Blizzard.
 
 ## Template Variables
 
@@ -23,24 +48,25 @@ Prefix all variables with `wow.`. Numeric values are null when unknown; the corr
 | `region` | Region |
 | `class` | Class |
 | `spec` | Active specialization |
-| `role` | Active role |
+| `role` | Active role (TANK, HEALING or DPS) |
 | `race` | Race |
 | `faction` | Faction |
 | `guild` | Guild |
 | `achievement_points` | Achievement points |
 | `item_level` | Equipped item level; null when unavailable |
 | `item_level_display` | Rounded item level or -- |
-| `season` | Season returned by Raider.IO |
-| `mythic_score` | Overall current-season Mythic+ score; null when unavailable |
+| `season` | Current Mythic+ season (Raider.IO slug or Blizzard season ID) |
+| `mythic_score` | Overall current-season Mythic+ score (Raider.IO score or Blizzard rating); null when unavailable |
 | `mythic_score_display` | Rounded score or -- |
-| `healer_score` | Current-season healer score; null when unavailable |
+| `healer_score` | Current-season healer score (Raider.IO only); null when unavailable |
 | `weekly_highest_key` | Highest completed key this week, including untimed runs |
 | `weekly_highest_timed_key` | Highest timed key this week |
 | `weekly_key_display` | Highest completed key formatted as +N, or -- |
 | `raid_progress` | Current-tier raid summaries, separated by | |
-| `source` | Data provider name |
-| `profile_url` | Raider.IO character profile and attribution link |
-| `source_updated_at` | Timestamp when Raider.IO last crawled the character |
+| `source` | Data provider name: Raider.IO or Blizzard |
+| `source_short` | Short provider label: RIO or BNET |
+| `profile_url` | Raider.IO or Blizzard Armory character profile link |
+| `source_updated_at` | Raider.IO crawl time, or the character’s last logout for Blizzard |
 | `source_updated_date` | Source date, YYYY-MM-DD, or UNKNOWN |
 | `source_age_days` | Age of the source snapshot in days; null if unknown |
 | `fetched_at` | Timestamp of our last successful fetch, not the source update time |
@@ -60,7 +86,7 @@ Prefix all variables with `wow.`. Numeric values are null when unknown; the corr
 ILVL {{wow.item_level_display}}  M+ {{wow.mythic_score_display}}
 WEEK {{wow.weekly_key_display}}
 {{wow.raid_progress}}
-RIO {{wow.source_updated_date}}
+{{wow.source_short}} {{wow.source_updated_date}}
 ```
 
 [Pixoo character and AI art example](./examples/pixoo-character-and-art.json) reserves a smaller canvas beside the stats. It requires the separate Generative AI Art plugin and a pixel-capable FiestaBoard build with page canvases. Create a named `wow` instance of Generative AI Art, configure and enable it independently, then set its custom theme to your character's class, race and specialization, such as “World of Warcraft Restoration Druid, emerald healing magic, moonlit forest, bold silhouette, no lettering.” The example uses `{{generative_ai_art:wow.canvas}}`, keeping its theme separate from the base art instance. Canvases sharing the same instance share its artwork; create different instances for different themes. The image is scaled into the region; native generation at that region's dimensions is not provided by this stats plugin. Save a generated image as the canvas's content fallback to keep it visible while the art source refreshes.
@@ -85,6 +111,9 @@ The original image is cached in memory. A changed URL or Raider.IO source timest
 |---|---|---|
 | `region` | `eu` | Retail region: eu, us, kr, tw |
 | `realm` | Required | Realm name or slug from the profile URL |
+| `data_source` | `auto` | `auto` (Blizzard when credentials are set, else Raider.IO), `raiderio`, or `blizzard` |
+| `client_id` | Empty | Optional Battle.net API client ID |
+| `client_secret` | Empty | Optional Battle.net API client secret |
 | `character` | Required | Exact character name, including accents |
 | `refresh_seconds` | `900` | Poll interval, 300–86400 seconds |
 | `avatar_width` | `64` | Source pixel width, 1–128 |
@@ -101,7 +130,7 @@ The original image is cached in memory. A changed URL or Raider.IO source timest
 - Text output adapts to the board's rows and columns.
 - Composes with a separate AI-art canvas on pixel displays.
 
-This is not live combat telemetry, a complete weekly run history, or a Great Vault tracker. Raider.IO returns up to ten highest weekly runs, not every run. Empty arrays mean no records returned, not proof that the character has done no content. Old source snapshots show OLD DATA. Public-facing uses must retain a [Raider.IO](https://raider.io) attribution link; `profile_url` provides a character-specific link.
+Neither source is live in-game telemetry. This is not live combat telemetry, a complete weekly run history, or a Great Vault tracker. Raider.IO returns up to ten highest weekly runs, not every run. Empty arrays mean no records returned, not proof that the character has done no content. Old source snapshots show OLD DATA. Public-facing uses must retain a [Raider.IO](https://raider.io) attribution link; `profile_url` provides a character-specific link.
 
 ## Author
 

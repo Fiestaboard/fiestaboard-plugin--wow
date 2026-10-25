@@ -1,6 +1,5 @@
-"""World of Warcraft Retail profiles, sourced from Raider.IO's public API."""
+"""World of Warcraft Retail profiles from Raider.IO, or Blizzard's Profile API."""
 
-import math
 import threading
 import time
 from datetime import datetime, timezone
@@ -11,42 +10,14 @@ import requests
 
 from src.plugins.base import PluginBase, PluginResult
 from .avatar import DECODE_ERRORS, avatar_canvas, download_avatar, image_decoder_available, trusted_avatar_url
+from .blizzard import BlizzardClient, BlizzardError, RateLimited, build_profile
+from .fields import _display, _mapping, _number, _sequence, _text, derived
 
 PROFILE_URL = "https://raider.io/api/v1/characters/profile"
 FIELDS = ",".join((
     "gear", "guild", "mythic_plus_scores_by_season:current",
     "mythic_plus_weekly_highest_level_runs", "raid_progression:current-tier",
 ))
-
-
-def _text(value: Any) -> str:
-    return " ".join(str(value or "").split())[:200]
-
-
-def _number(value: Any) -> int | float | None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    return value if math.isfinite(value) and value >= 0 else None
-
-
-def _display(value: int | float | None) -> str:
-    return "--" if value is None else f"{value:.0f}"
-
-
-def _mapping(value: Any) -> dict:
-    if value is None:
-        return {}
-    if not isinstance(value, dict):
-        raise ValueError("Expected a profile object")
-    return value
-
-
-def _sequence(value: Any) -> list:
-    if value is None:
-        return []
-    if not isinstance(value, list):
-        raise ValueError("Expected a profile list")
-    return value
 
 
 class WoWPlugin(PluginBase):
@@ -60,6 +31,7 @@ class WoWPlugin(PluginBase):
         self._avatar_bytes: bytes | None = None
         self._avatar_key: tuple | None = None
         self._avatar_fetched_at = 0.0
+        self._blizzard = BlizzardClient()
 
     @property
     def plugin_id(self) -> str:
@@ -90,17 +62,41 @@ class WoWPlugin(PluginBase):
             value = config.get(field, 64)
             if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 128:
                 errors.append(f"{field} must be a whole number from 1 to 128.")
+        source = config.get("data_source", "auto")
+        if source not in ("auto", "raiderio", "blizzard"):
+            errors.append("Data source must be auto, raiderio, or blizzard.")
+        filled = 0
+        for field, label in (("client_id", "client ID"), ("client_secret", "client secret")):
+            value = config.get(field, "")
+            if value in ("", None):
+                continue
+            filled += 1
+            # "***" is the masked placeholder; it must never reach Blizzard.
+            if (not isinstance(value, str) or len(value) > 200 or value == "***"
+                    or any(ord(c) < 33 for c in value)):
+                errors.append(f"Invalid Battle.net {label}.")
+        if filled == 1 or (source == "blizzard" and filled == 0):
+            errors.append("Both a Battle.net client ID and client secret are required.")
         return errors
+
+    @staticmethod
+    def _uses_blizzard(config: dict) -> bool:
+        return config.get("data_source", "auto") != "raiderio" and bool(
+            config.get("client_id") and config.get("client_secret"))
 
     def on_config_change(self, old_config: dict, new_config: dict) -> None:
         # Serialize with fetches so a previous character cannot repopulate the
-        # fallback after a settings change. Preserve server-wide rate backoff.
+        # fallback after a settings change. Preserve the provider's rate backoff.
         with self._fetch_lock:
             self._last_good = None
             if any(old_config.get(k) != new_config.get(k) for k in ("region", "realm", "character")):
                 self._avatar_bytes = None
                 self._avatar_key = None
                 self._avatar_fetched_at = 0.0
+            if any(old_config.get(k) != new_config.get(k) for k in ("client_id", "client_secret")):
+                self._blizzard.clear()
+            if self._uses_blizzard(old_config) != self._uses_blizzard(new_config):
+                self._retry_at = 0.0  # One provider's backoff must not block the other.
 
     def fetch_data(self) -> PluginResult:
         with self._fetch_lock:
@@ -108,6 +104,8 @@ class WoWPlugin(PluginBase):
             errors = self.validate_config(config)
             if errors:
                 return PluginResult(available=False, error=" ".join(errors))
+            if self._uses_blizzard(config):
+                return self._fetch_blizzard(config)
             if time.monotonic() < self._retry_at:
                 return self._failure("Raider.IO rate limit; waiting before retrying.")
             try:
@@ -135,13 +133,30 @@ class WoWPlugin(PluginBase):
                 return self._failure("Raider.IO is unavailable or timed out.")
             except (ValueError, TypeError, KeyError):
                 return self._failure("Raider.IO returned an invalid character profile.")
-            data.update(self._avatar(payload, config))
+            data.update(self._avatar(payload.get("thumbnail_url"), payload.get("last_crawled_at"), config))
             self._last_good = data
             return self._result(data)
 
-    def _avatar(self, payload: dict, config: dict) -> dict:
-        url = payload.get("thumbnail_url")
-        key = (url, payload.get("last_crawled_at"))
+    def _fetch_blizzard(self, config: dict) -> PluginResult:
+        if time.monotonic() < self._retry_at:
+            return self._failure("Blizzard rate limit; waiting before retrying.")
+        try:
+            data, avatar_url = build_profile(*self._blizzard.fetch(config), config)
+        except RateLimited as exc:
+            self._retry_at = time.monotonic() + exc.delay
+            return self._failure(str(exc))
+        except BlizzardError as exc:
+            return self._failure(str(exc))
+        except requests.RequestException:
+            return self._failure("Blizzard is unavailable or timed out.")
+        except (ValueError, TypeError, KeyError):
+            return self._failure("Blizzard returned an invalid character profile.")
+        data.update(self._avatar(avatar_url, data["source_updated_at"], config))
+        self._last_good = data
+        return self._result(data)
+
+    def _avatar(self, url, version, config: dict) -> dict:
+        key = (url, version)
         width, height = config.get("avatar_width", 64), config.get("avatar_height", 64)
         status = "OK"
         canvas = None
@@ -187,7 +202,6 @@ class WoWPlugin(PluginBase):
                          "short_name": _text(run.get("short_name")), "level": level,
                          "timed": None if upgrades is None else upgrades > 0,
                          "score": _number(run.get("score"))})
-        runs.sort(key=lambda r: r["level"], reverse=True)
         raids = []
         for slug, value in _mapping(p.get("raid_progression")).items():
             raid = _mapping(value)
@@ -196,21 +210,11 @@ class WoWPlugin(PluginBase):
                           **{key: _number(raid.get(key)) for key in (
                               "total_bosses", "normal_bosses_killed",
                               "heroic_bosses_killed", "mythic_bosses_killed")}})
-        updated = _text(p.get("last_crawled_at"))
-        age = None
-        if updated:
-            try:
-                parsed = datetime.fromisoformat(updated.replace("Z", "+00:00"))
-                age = max(0, int((now - parsed).total_seconds() // 86400))
-            except (ValueError, TypeError):
-                pass
         region = config.get("region", "eu")
         # Build a trusted source URL, rather than rendering an arbitrary URL
         # returned by an upstream service.
         url = "https://raider.io/characters/" + "/".join(
             quote(v, safe="") for v in (region, config["realm"].strip(), p["name"]))
-        highest = runs[0]["level"] if runs else None
-        timed = max((r["level"] for r in runs if r["timed"]), default=None)
         ilvl, score = _number(gear.get("item_level_equipped")), _number(scores.get("all"))
         return {
             "name": _text(p["name"]), "realm": _text(p["realm"]), "region": region.upper(),
@@ -221,14 +225,8 @@ class WoWPlugin(PluginBase):
             "item_level": ilvl, "item_level_display": _display(ilvl),
             "season": _text(season.get("season")), "mythic_score": score,
             "mythic_score_display": _display(score), "healer_score": _number(scores.get("healer")),
-            "weekly_highest_key": highest, "weekly_highest_timed_key": timed,
-            "weekly_key_display": "--" if highest is None else f"+{highest:g}",
-            "weekly_runs": runs, "raids": raids,
-            "raid_progress": " | ".join(r["summary"] for r in raids) or "NO DATA",
-            "source": "Raider.IO", "profile_url": url,
-            "source_updated_at": updated, "source_updated_date": updated[:10] or "UNKNOWN",
-            "source_age_days": age, "fetched_at": now.isoformat(),
-            "stale": False, "status": "OLD DATA" if age is not None and age > 7 else "OK",
+            "source": "Raider.IO", "source_short": "RIO", "profile_url": url,
+            **derived(runs, raids, _text(p.get("last_crawled_at")), now),
         }
 
     def _result(self, data: dict, error: str | None = None) -> PluginResult:
@@ -237,7 +235,7 @@ class WoWPlugin(PluginBase):
         lines = [data["name"], f"ILVL {data['item_level_display']}",
                  f"M+ {data['mythic_score_display']}",
                  f"WEEK {data['weekly_key_display']}", data["raid_progress"],
-                 "STALE" if data["stale"] else f"RIO {data['source_updated_date']}"]
+                 "STALE" if data["stale"] else f"{data.get('source_short', 'RIO')} {data['source_updated_date']}"]
         return PluginResult(available=True, data=data, error=error,
                             formatted_lines=[line[:cols] for line in lines[:rows]])
 

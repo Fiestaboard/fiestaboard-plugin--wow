@@ -6,7 +6,7 @@ import pytest
 import requests
 from PIL import Image
 
-from .test_plugin import plugin, profile, response
+from .conftest import response
 
 URL = "https://render.worldofwarcraft.com/eu/character/example/1/2-avatar.jpg"
 

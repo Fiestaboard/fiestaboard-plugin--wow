@@ -1,8 +1,8 @@
 {
   "id": "wow",
   "name": "World of Warcraft",
-  "version": "1.1.0",
-  "description": "Track a Retail character’s stats and real pixel avatar with Raider.IO.",
+  "version": "1.2.0",
+  "description": "Track a Retail character’s stats and real pixel avatar via Raider.IO, or fresher data from Blizzard’s official API.",
   "author": "FiestaBoard Team",
   "icon": "swords",
   "category": "data",
@@ -27,7 +27,7 @@
       "realm": {
         "type": "string",
         "title": "Realm",
-        "description": "Retail realm name or slug, such as silvermoon. Copy it from your Raider.IO profile URL.",
+        "description": "Retail realm name or slug, such as silvermoon. Copy the slug from your Armory or Raider.IO profile URL (required for Russian, Korean and Taiwanese realms).",
         "minLength": 1,
         "maxLength": 100
       },
@@ -38,10 +38,35 @@
         "minLength": 1,
         "maxLength": 100
       },
+      "data_source": {
+        "type": "string",
+        "title": "Data source",
+        "description": "Auto uses Blizzard’s API when both Battle.net credentials are set (updates when the character logs out), otherwise Raider.IO (updates when Raider.IO re-crawls).",
+        "enum": [
+          "auto",
+          "raiderio",
+          "blizzard"
+        ],
+        "default": "auto"
+      },
+      "client_id": {
+        "type": "string",
+        "title": "Battle.net client ID (optional)",
+        "description": "From develop.battle.net → API Access. Enables fresher Blizzard data. Hidden after saving.",
+        "maxLength": 200,
+        "ui:widget": "password"
+      },
+      "client_secret": {
+        "type": "string",
+        "title": "Battle.net client secret (optional)",
+        "description": "Required together with the client ID.",
+        "maxLength": 200,
+        "ui:widget": "password"
+      },
       "refresh_seconds": {
         "type": "integer",
         "title": "Refresh interval (seconds)",
-        "description": "Raider.IO updates periodically; this is not live game telemetry.",
+        "description": "Neither source is live game telemetry: Blizzard updates on logout, Raider.IO on its own crawl.",
         "default": 900,
         "minimum": 300,
         "maximum": 86400
@@ -111,7 +136,7 @@
         "group": "character"
       },
       "role": {
-        "description": "Active role",
+        "description": "Active role (TANK, HEALING or DPS)",
         "type": "string",
         "group": "character"
       },
@@ -146,12 +171,12 @@
         "group": "progress"
       },
       "season": {
-        "description": "Season returned by Raider.IO",
+        "description": "Current Mythic+ season (Raider.IO slug or Blizzard season ID)",
         "type": "string",
         "group": "progress"
       },
       "mythic_score": {
-        "description": "Overall current-season Mythic+ score; null when unavailable",
+        "description": "Overall current-season Mythic+ score (Raider.IO score or Blizzard rating); null when unavailable",
         "type": "number",
         "group": "progress"
       },
@@ -161,7 +186,7 @@
         "group": "progress"
       },
       "healer_score": {
-        "description": "Current-season healer score; null when unavailable",
+        "description": "Current-season healer score (Raider.IO only); null when unavailable",
         "type": "number",
         "group": "progress"
       },
@@ -186,17 +211,22 @@
         "group": "progress"
       },
       "source": {
-        "description": "Data provider name",
+        "description": "Data provider name: Raider.IO or Blizzard",
+        "type": "string",
+        "group": "source"
+      },
+      "source_short": {
+        "description": "Short provider label: RIO or BNET",
         "type": "string",
         "group": "source"
       },
       "profile_url": {
-        "description": "Raider.IO character profile and attribution link",
+        "description": "Raider.IO or Blizzard Armory character profile link",
         "type": "string",
         "group": "source"
       },
       "source_updated_at": {
-        "description": "Timestamp when Raider.IO last crawled the character",
+        "description": "Raider.IO crawl time, or the character’s last logout for Blizzard",
         "type": "string",
         "group": "source"
       },
@@ -221,7 +251,7 @@
         "group": "source"
       },
       "status": {
-        "description": "OK, OLD DATA (source older than seven days), or STALE (refresh failed)",
+        "description": "OK, OLD DATA (source older than seven days; for Blizzard, no logout in seven days), or STALE (refresh failed)",
         "type": "string",
         "group": "source"
       },
@@ -276,7 +306,7 @@
       "ILVL {{wow.item_level_display}}  M+ {{wow.mythic_score_display}}",
       "WEEK {{wow.weekly_key_display}}",
       "{{wow.raid_progress}}",
-      "RIO {{wow.source_updated_date}}"
+      "{{wow.source_short}} {{wow.source_updated_date}}"
     ]
   },
   "screenshots": [
@@ -296,7 +326,7 @@
         "ILVL 251  M+ 2457",
         "WEEK +10",
         "3/8 H",
-        "RAIDER.IO"
+        "RIO 2026-10-01"
       ]
     },
     {
