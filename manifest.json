@@ -22,46 +22,69 @@
           "kr",
           "tw"
         ],
-        "default": "eu"
+        "default": "eu",
+        "enumNames": [
+          "Europe (EU)",
+          "Americas & Oceania (US)",
+          "Korea (KR)",
+          "Taiwan (TW)"
+        ]
       },
       "realm": {
         "type": "string",
         "title": "Realm",
-        "description": "Retail realm name or slug, such as silvermoon. Copy the slug from your Armory or Raider.IO profile URL (required for Russian, Korean and Taiwanese realms).",
+        "description": "Realm name or slug, such as argent-dawn. Copy the slug from your Raider.IO or Armory profile URL; Russian, Korean and Taiwanese realms must use the slug.",
         "minLength": 1,
         "maxLength": 100
       },
       "character": {
         "type": "string",
         "title": "Character",
-        "description": "Exact character spelling, including accents.",
+        "description": "Exact character name, including accents.",
         "minLength": 1,
         "maxLength": 100
       },
       "data_source": {
         "type": "string",
         "title": "Data source",
-        "description": "Auto uses Blizzard’s API when both Battle.net credentials are set (updates when the character logs out), otherwise Raider.IO (updates when Raider.IO re-crawls).",
+        "description": "Blizzard updates when the character logs out; Raider.IO can lag hours or days behind.",
         "enum": [
           "auto",
           "raiderio",
           "blizzard"
         ],
-        "default": "auto"
+        "default": "auto",
+        "enumNames": [
+          "Automatic: Blizzard when credentials are set, otherwise Raider.IO",
+          "Raider.IO only (no setup needed)",
+          "Blizzard only (credentials required)"
+        ]
       },
       "client_id": {
         "type": "string",
-        "title": "Battle.net client ID (optional)",
-        "description": "From develop.battle.net → API Access. Enables fresher Blizzard data. Hidden after saving.",
+        "title": "Battle.net client ID",
+        "description": "At develop.battle.net → API Access → Create Client: any unique name, redirect URL https://fiestaboard.app/auth/oauth/redirect (unused), tick “I do not have a service URL”. Copy the client ID here.",
         "maxLength": 200,
-        "ui:widget": "password"
+        "ui:widget": "password",
+        "ui:placeholder": "Paste your client ID",
+        "ui:visible_when": {
+          "not": {
+            "data_source": "raiderio"
+          }
+        }
       },
       "client_secret": {
         "type": "string",
-        "title": "Battle.net client secret (optional)",
-        "description": "Required together with the client ID.",
+        "title": "Battle.net client secret",
+        "description": "From the same client. It stays on this board and is only sent to Blizzard. Never share it; reset it at develop.battle.net if exposed.",
         "maxLength": 200,
-        "ui:widget": "password"
+        "ui:widget": "password",
+        "ui:placeholder": "Paste your client secret",
+        "ui:visible_when": {
+          "not": {
+            "data_source": "raiderio"
+          }
+        }
       },
       "refresh_seconds": {
         "type": "integer",
@@ -88,6 +111,38 @@
         "maximum": 128
       }
     },
+    "ui:sections": [
+      {
+        "id": "character",
+        "title": "Character",
+        "fields": [
+          "region",
+          "realm",
+          "character"
+        ]
+      },
+      {
+        "id": "blizzard",
+        "title": "Fresher data from Blizzard (optional)",
+        "description": "Raider.IO works with no setup but can lag hours or days. Blizzard updates when you log out. To use it, create your own free Battle.net API client at develop.battle.net (about two minutes, nothing to apply for) and paste its ID and secret below. Full guide: github.com/Fiestaboard/fiestaboard-plugin--wow",
+        "fields": [
+          "data_source",
+          "client_id",
+          "client_secret"
+        ]
+      },
+      {
+        "id": "display",
+        "title": "Refresh and avatar",
+        "fields": [
+          "refresh_seconds",
+          "avatar_width",
+          "avatar_height"
+        ],
+        "collapsible": true,
+        "collapsed": true
+      }
+    ],
     "required": [
       "region",
       "realm",
