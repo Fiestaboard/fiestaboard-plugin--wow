@@ -65,6 +65,8 @@ class WoWPlugin(PluginBase):
         source = config.get("data_source", "auto")
         if source not in ("auto", "raiderio", "blizzard"):
             errors.append("Data source must be auto, raiderio, or blizzard.")
+        if source == "raiderio":
+            return errors  # Credential fields are hidden and unused in this mode.
         filled = 0
         for field, label in (("client_id", "client ID"), ("client_secret", "client secret")):
             value = config.get(field, "")

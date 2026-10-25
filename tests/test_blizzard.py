@@ -118,9 +118,12 @@ def test_data_source_enum_and_blizzard_needs_both_credentials(bnet):
     assert not bnet.validate_config({**base, "data_source": "auto"})
     assert not bnet.validate_config({**base, "data_source": "raiderio", **CREDS})
     # Half a credential pair is a paste error, never a silent Raider.IO fallback.
-    for mode_ in ("auto", "raiderio"):
+    for mode_ in ("auto", "blizzard"):
         assert bnet.validate_config({**base, "data_source": mode_, "client_id": "x"})
         assert bnet.validate_config({**base, "data_source": mode_, "client_secret": "x"})
+    # Raider.IO-only hides the credential fields, so leftovers there cannot block saving.
+    assert not bnet.validate_config({**base, "data_source": "raiderio", "client_id": "x"})
+    assert not bnet.validate_config({**base, "data_source": "raiderio", "client_secret": "***"})
     assert not bnet.validate_config({**base, "client_id": "", "client_secret": ""})
 
 
@@ -519,3 +522,65 @@ def test_switching_provider_clears_other_providers_backoff(bnet, profile):
     with patch("requests.get", return_value=response(profile)) as get:
         result = bnet.fetch_data()
     assert get.called and result.data["source"] == "Raider.IO" and not result.data["stale"]
+
+
+# --- Settings form ----------------------------------------------------------
+
+def _manifest():
+    import json
+    from pathlib import Path
+    return json.loads((Path(__file__).parents[1] / "manifest.json").read_text())
+
+
+def test_choices_have_plain_language_labels():
+    props = _manifest()["settings_schema"]["properties"]
+    for field in ("region", "data_source"):
+        names = props[field].get("enumNames")
+        assert names and len(names) == len(props[field]["enum"])
+        assert all(isinstance(n, str) and n for n in names)
+    labels = dict(zip(props["data_source"]["enum"], props["data_source"]["enumNames"]))
+    assert "Raider.IO" in labels["auto"] and "Blizzard" in labels["auto"]
+    assert "Blizzard" in labels["blizzard"] and "Raider.IO" in labels["raiderio"]
+
+
+def test_credential_fields_point_to_battle_net_and_have_short_placeholders():
+    props = _manifest()["settings_schema"]["properties"]
+    assert "develop.battle.net" in props["client_id"]["description"]
+    for field in ("client_id", "client_secret"):
+        # Core shows the description as placeholder when none is given; keep it short.
+        assert 0 < len(props[field]["ui:placeholder"]) <= 40
+        assert props[field]["ui:widget"] == "password"
+
+
+def test_sections_group_every_field_once_in_setup_order():
+    manifest = _manifest()
+    schema = manifest["settings_schema"]
+    sections = schema["ui:sections"]
+    grouped = [f for section in sections for f in section["fields"]]
+    assert sorted(grouped) == sorted(schema["properties"])
+    assert [s["id"] for s in sections] == ["character", "blizzard", "display"]
+    assert sections[1]["fields"] == ["data_source", "client_id", "client_secret"]
+    assert "develop.battle.net" in sections[1]["description"]
+    # Properties also stay in setup order for cores that render them flat.
+    assert list(schema["properties"]) == grouped
+
+
+@pytest.mark.parametrize("source,shown", [("auto", True), ("blizzard", True), ("raiderio", False), (None, True)])
+def test_credentials_hidden_only_for_raiderio(source, shown):
+    settings_ui = pytest.importorskip("src.plugins.settings_ui")
+    props = _manifest()["settings_schema"]["properties"]
+    values = {} if source is None else {"data_source": source}
+    for field in ("client_id", "client_secret"):
+        assert settings_ui.is_visible(props[field]["ui:visible_when"], values, props) is shown
+
+
+def test_form_extensions_validate_on_core():
+    from src.plugins.manifest import validate_manifest
+    try:
+        from src.plugins.settings_ui import sections_errors
+    except ImportError:  # Older cores ignore ui:sections / ui:visible_when.
+        sections_errors = None
+    manifest = _manifest()
+    assert validate_manifest(manifest)[0]
+    if sections_errors:
+        assert not sections_errors(manifest["settings_schema"]["ui:sections"], manifest["settings_schema"]["properties"])

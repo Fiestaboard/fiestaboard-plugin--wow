@@ -38,8 +38,8 @@ Save, then copy the **Client ID** and **Client Secret** from the Credentials sec
 
 ### 2. Add the credentials to your board
 
-1. In FiestaBoard, open the World of Warcraft integration settings.
-2. Paste the **Battle.net client ID** and **Battle.net client secret**. Leave **Data source** on `auto`.
+1. In FiestaBoard, open the World of Warcraft integration settings and find **Fresher data from Blizzard (optional)**.
+2. Leave **Data source** on **Automatic**, then paste the **Battle.net client ID** and **Battle.net client secret**. (Choosing **Raider.IO only** hides these two fields.)
 3. Set **Realm** to the slug from your Armory URL, for example `argent-dawn` in `worldofwarcraft.blizzard.com/en-gb/character/eu/argent-dawn/name`. Accented Latin names are converted automatically, but Russian, Korean and Taiwanese realms must be entered as the slug.
 4. Save. The bottom line of the demo page changes from `RIO <date>` to `BNET <date>`, where the date is the character’s last logout.
 
