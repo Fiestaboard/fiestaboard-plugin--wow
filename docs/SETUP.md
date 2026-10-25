@@ -17,13 +17,44 @@ For the Divoom/AI-art layout, see the [example page](../examples/pixoo-character
 
 ## Optional: fresher data from Blizzard
 
-Raider.IO updates when it re-crawls a character. Blizzard’s official Profile API updates when the character logs out.
+Raider.IO updates when it re-crawls a character, which can take hours or days. Blizzard’s official Profile API updates when the character logs out. Using Blizzard is optional: without it, the plugin works as above with Raider.IO and needs no account.
 
-1. At [develop.battle.net](https://develop.battle.net/access/clients) → **API Access**, create a client. Use any redirect URL, such as `https://localhost`.
-2. Enter the client ID and secret in the plugin settings, with **Data source** set to `auto`.
-3. Enter the realm slug from your Armory URL. Russian, Korean and Taiwanese realm names cannot be converted automatically.
+### Who needs to do this
+
+Only people who want the fresher data. **Each FiestaBoard owner creates their own free Battle.net API client.** FiestaBoard does not ship a shared client, because the plugin is open source and any secret bundled with it would be public. Your credentials stay in your own board’s settings.
+
+### 1. Create a Battle.net API client
+
+Sign in at [develop.battle.net](https://develop.battle.net/access/clients), open **API Access**, and choose **Create Client**. It is free and available immediately; there is nothing to apply for. Blizzard may ask you to add an authenticator to your account first.
+
+| Field | What to enter |
+|---|---|
+| **Client Name** | Anything unique to you, such as `FiestaBoard WoW - YourName`. Names are unique across all Battle.net developer accounts, so a plain “FiestaBoard” is likely taken. |
+| **Redirect URLs** | Required by the form but unused by this plugin. Enter `https://fiestaboard.app/auth/oauth/redirect`. |
+| **Service URL** | Tick **I do not have a service URL**. Your board calls the API from your home network, not from a hosted service. |
+| **Intended Use** | For example: “Personal FiestaBoard display. A self-hosted board on my home network uses the client-credentials grant to read public WoW Profile API data for my character every 5–15 minutes. No end-user login; nothing stored beyond an in-memory cache.” |
+
+Save, then copy the **Client ID** and **Client Secret** from the Credentials section.
+
+### 2. Add the credentials to your board
+
+1. In FiestaBoard, open the World of Warcraft integration settings.
+2. Paste the **Battle.net client ID** and **Battle.net client secret**. Leave **Data source** on `auto`.
+3. Set **Realm** to the slug from your Armory URL, for example `argent-dawn` in `worldofwarcraft.blizzard.com/en-gb/character/eu/argent-dawn/name`. Accented Latin names are converted automatically, but Russian, Korean and Taiwanese realms must be entered as the slug.
+4. Save. The bottom line of the demo page changes from `RIO <date>` to `BNET <date>`, where the date is the character’s last logout.
 
 After saving, both credential fields show `***`, including the client ID. Leaving a field as `***` keeps the stored value; type over it to replace it. See the [README](../README.md#fresher-data-with-blizzards-api-optional) for exactly which variables differ between sources.
+
+### Keep the secret private
+
+- Paste the secret only into your board’s settings. Do not put it in a page template, a shared page export, an issue, a chat, or a Git repository.
+- The board stores it in its own configuration and masks it in the settings UI and API responses. The plugin never puts it in template variables, error messages or logs, and only sends it to Blizzard’s token endpoint (`oauth.battle.net`).
+- If the secret is ever exposed, open the client at develop.battle.net, reset the secret, and paste the new one into your board.
+- To stop using Blizzard, clear both fields or set **Data source** to `raiderio`.
+
+### How the credentials are used
+
+The plugin uses OAuth’s **client-credentials** grant: it exchanges the client ID and secret for an app token (valid about 24 hours, cached in memory) and reads public character data with it. Nobody signs in to Battle.net, no browser redirect happens, and the FiestaBoard OAuth relay is not involved. Each refresh makes up to four API calls, far below Blizzard’s per-client limit of 36,000 per hour.
 
 ## Character portrait canvas
 

@@ -14,11 +14,17 @@ Track one configurable Retail character with the public [Raider.IO API](https://
 
 ## Fresher data with Blizzard’s API (optional)
 
-Raider.IO only changes when it re-crawls a character, which can take hours or days. Blizzard’s official Profile API updates **when the character logs out**, so the board reflects each play session. It needs a free Battle.net API client; no Battle.net login or OAuth redirect is involved.
+Raider.IO only changes when it re-crawls a character, which can take hours or days. Blizzard’s official Profile API updates **when the character logs out**, so the board reflects each play session.
 
-1. Sign in at [develop.battle.net](https://develop.battle.net/access/clients), open **API Access**, and create a client. Any redirect URL works (for example `https://localhost`); the plugin uses the client-credentials grant only.
+**This is opt-in, and each board owner sets it up for themselves.** Without credentials the plugin uses Raider.IO and needs no account. To use Blizzard, create your own free Battle.net API client (about two minutes, nothing to apply for) and paste its client ID and secret into your board’s plugin settings. FiestaBoard does not ship a shared client: the plugin is open source, so a bundled secret would be public and Blizzard would revoke it. Your secret stays on your board. No Battle.net sign-in, browser redirect or FiestaBoard OAuth relay is involved; the plugin uses OAuth’s client-credentials grant.
+
+**→ [Step-by-step: create a client, fill in Blizzard’s form, keep the secret private](./docs/SETUP.md#optional-fresher-data-from-blizzard)**
+
+In short:
+
+1. At [develop.battle.net](https://develop.battle.net/access/clients) → **API Access**, create a client. Tick “I do not have a service URL”; the redirect URL is unused (`https://fiestaboard.app/auth/oauth/redirect` is fine).
 2. Paste the **client ID** and **client secret** into the plugin settings. Leave **Data source** on `auto`.
-3. Use the realm **slug** from your Armory URL (`worldofwarcraft.blizzard.com/…/character/eu/argent-dawn/name`). Latin realm names are converted automatically; Russian, Korean and Taiwanese realms must be entered as the slug.
+3. Use the realm **slug** from your Armory URL (`worldofwarcraft.blizzard.com/…/character/eu/argent-dawn/name`). Accented Latin names are converted automatically; Russian, Korean and Taiwanese realms must be entered as the slug.
 
 What changes with Blizzard as the source:
 
@@ -29,7 +35,7 @@ What changes with Blizzard as the source:
 - `raids` lists every raid in Blizzard’s *Current Season* group (falling back to the newest expansion), summarized at the highest difficulty with a kill.
 - The avatar uses Blizzard’s character-media portrait with the same trusted-host checks and cache.
 
-Each refresh makes four API calls (five if a rejected token is renewed) plus a token request about once a day, far below Blizzard’s limits. Both credentials are stored as masked settings and never appear in variables or errors. Filling in only one of the two is rejected so a paste error cannot silently fall back to Raider.IO. Set **Data source** to `raiderio` to keep the credentials but use Raider.IO, or `blizzard` to require Blizzard.
+Each refresh makes four API calls (five if a rejected token is renewed) plus a token request about once a day, far below Blizzard’s limits. Both credentials are stored as masked settings in the board’s own configuration and never appear in variables, errors or logs; the secret is sent only to Blizzard’s token endpoint. If it is ever exposed, reset it at develop.battle.net. Filling in only one of the two is rejected so a paste error cannot silently fall back to Raider.IO. Set **Data source** to `raiderio` to keep the credentials but use Raider.IO, or `blizzard` to require Blizzard.
 
 ## Template Variables
 
